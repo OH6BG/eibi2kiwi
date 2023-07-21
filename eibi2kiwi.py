@@ -191,13 +191,11 @@ with open(FILEIN, "r") as inf:
         )
         DOW = ""
 
+# sort the output list of lists by the frequency
+# which is the first (stringified) element in the lists
+# (converted to float for correct sorting)
+outrow.sort(key=lambda x: float(x[0]))
+
 with open(FILEOUT, "w", encoding="utf-8") as outf:
     for row in outrow:
         outf.write(";".join(row) + "\n")
-
-"""
-LAST BUT NOT THE LEAST
-Remember to sort the lines of the output file (kiwi.csv)
-as the lines may not be perfectly sorted by frequency
-in the original EiBi CSV file
-"""
