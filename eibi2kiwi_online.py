@@ -1,6 +1,6 @@
 """
     Create kiwiSDR-compatible broadcast schedules with DX labels
-    from EiBi CSV broadcast schedules in Python
+    from EiBi CSV broadcast schedules (http://www.eibispace.de) in Python
 
     Copyright (C) 2023 Jari Perkiömäki OH6BG
 
@@ -23,6 +23,23 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 from time import sleep
+
+"""
+Create a location dictionary from a CSV file
+This is used to map location abbreviations in a country to full names
+"""
+location_dict = {}
+with open('eibisites.csv', 'r', encoding="utf-8") as f:
+    reader = csv.reader(f, delimiter=';')
+    for row in reader:
+        try:
+            country_code, location_code, location_name = row
+        except Exception as e:
+            print(f"ERROR in eibisites.csv: {e}.\nRow: {row}")
+        if country_code not in location_dict:
+            location_dict[country_code] = {}
+        location_dict[country_code][location_code] = location_name
+
 
 """
 Construct FILEIN by detecting the Season and year, and fetch FILEIN from EiBi website
@@ -207,7 +224,7 @@ with open(FILEIN, "r") as inf:
             r = weekdays_to_binstrings(day, days)
             s = create_weekly_binstring(r)
             DOW = binstring_to_dowstring(s)
-        elif "-" in day:
+        elif "-" in day and day[-1] != "-":
             r = expand_weekday_range(day)
             r = weekdays_to_binstrings(r, days)
             s = create_weekly_binstring(r)
@@ -218,6 +235,7 @@ with open(FILEIN, "r") as inf:
             DOW = f'"{DOW}"'
         itu = row[3]
         ident = row[4]
+
         lang = row[5].strip()
         if lang.startswith("-") or not lang:
             type = "T4"
@@ -227,16 +245,29 @@ with open(FILEIN, "r") as inf:
             lang = ""
         else:
             lang = f"Lang: {lang}"
+
         target = row[6].strip()
         if not target:
             target = ""
         else:
             target = f"Target: {target}."
-        rem = row[7]
-        if not rem:
-            notes = f"{itu}. {target} {lang}"
+
+        txsite = ""
+        if "/" in row[7]:
+            stn = row[7].split('-')
+            itu = stn[0][1:]
+            try:
+                txsite = stn[1]
+            except:
+                pass
         else:
-            notes = f"{itu} via {rem}. {target} {lang}"
+            txsite = row[7]
+        long_name = location_dict.get(itu, {}).get(txsite)
+        if long_name is not None:
+            notes = f"{itu} {long_name.strip()}. {target} {lang}"
+        else:
+            notes = f"{itu}. {target} {lang}"
+
         outrow.append(
             [
                 str(khz),
