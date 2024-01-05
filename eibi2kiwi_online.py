@@ -60,12 +60,12 @@ season_a_start = last_sunday(today.year, 3)
 season_a_end = last_sunday(today.year, 10)
 season_b_end = last_sunday(today.year + 1, 3)
 
-print(f"Season A start: {season_a_start}; Season A end: {season_a_end}; Season B end: {season_b_end}")
-
 if today < season_a_start:
     season_a_start = last_sunday(today.year - 1, 3)
     season_a_end = last_sunday(today.year - 1, 10)
     season_b_end = last_sunday(today.year, 3)
+
+print(f"Season A start: {season_a_start}; Season A end: {season_a_end}; Season B end: {season_b_end}")
 
 if season_a_start <= today <= season_a_end:
     FILEIN = f"sked-a{str(today.year)[2:]}.csv"
