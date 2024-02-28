@@ -215,6 +215,7 @@ with open(FILEIN, "r") as inf:
     reader = csv.reader(inf, delimiter=";")
     next(reader)  # skip the header line
     for row in reader:
+        DOW = ""
         khz = float(row[0])
         begin, end = row[1].split("-")
         # avoid using "0000" and "2400" directly
@@ -278,7 +279,11 @@ with open(FILEIN, "r") as inf:
             notes = f"{itu} {long_name.strip()}. {target} {lang}"
         else:
             notes = f"{itu}. {target} {lang}"
-
+        
+        # remove "one-day" stations
+        if row[9] == row[10] and row[9] != "":
+            continue
+        
         outrow.append(
             [
                 str(khz),
@@ -295,7 +300,6 @@ with open(FILEIN, "r") as inf:
                 str(end),
             ]
         )
-        DOW = ""
 
 # sort the output list of lists by the frequency
 # which is the first (stringified) element in the lists
