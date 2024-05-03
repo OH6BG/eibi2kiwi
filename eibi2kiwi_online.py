@@ -1,22 +1,23 @@
 """
-    Create kiwiSDR-compatible broadcast schedules with DX labels
-    from EiBi CSV broadcast schedules (http://www.eibispace.de) in Python
+Create kiwiSDR-compatible broadcast schedules with DX labels
+from EiBi CSV broadcast schedules (http://www.eibispace.de) in Python
 
-    Copyright (C) 2023 Jari Perkiömäki OH6BG
+Copyright (C) 2023 Jari Perkiömäki OH6BG
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import csv
 import requests
 import sys
@@ -29,8 +30,8 @@ Create a location dictionary from a CSV file
 This is used to map location abbreviations in a country to full names
 """
 location_dict = {}
-with open('eibisites.csv', 'r', encoding="utf-8") as f:
-    reader = csv.reader(f, delimiter=';')
+with open("eibisites.csv", "r", encoding="utf-8") as f:
+    reader = csv.reader(f, delimiter=";")
     for row in reader:
         try:
             country_code, location_code, location_name = row
@@ -65,7 +66,9 @@ if today < season_a_start:
     season_a_end = last_sunday(today.year - 1, 10)
     season_b_end = last_sunday(today.year, 3)
 
-print(f"Season A start: {season_a_start}; Season A end: {season_a_end}; Season B end: {season_b_end}")
+print(
+    f"Season A start: {season_a_start}; Season A end: {season_a_end}; Season B end: {season_b_end}"
+)
 
 if season_a_start <= today <= season_a_end:
     FILEIN = f"sked-a{str(today.year)[2:]}.csv"
@@ -93,7 +96,7 @@ for attempt in range(max_attempts):
         content = response.text.replace("\r\n", "\r")
         with open(FILEIN, "w") as f:
             f.write(content)
-        print(f"done.")
+        print("done.")
         break
     except requests.exceptions.HTTPError as e:
         if response.status_code == 404:
@@ -215,7 +218,12 @@ with open(FILEIN, "r") as inf:
     reader = csv.reader(inf, delimiter=";")
     next(reader)  # skip the header line
     for row in reader:
+        # remove "one-day" stations
+        if row[9] == row[10] and row[9] != "":
+            continue
+
         DOW = ""
+        mode = "SAS"  # stereo AM
         khz = float(row[0])
         begin, end = row[1].split("-")
         # avoid using "0000" and "2400" directly
@@ -246,8 +254,10 @@ with open(FILEIN, "r") as inf:
         else:
             DOW = f'"{DOW}"'
         itu = row[3]
+        # if ident (row[4]) contains "DIGITAL", change the mode to "DRM"
         ident = row[4]
-
+        if "DIGITAL" in ident:
+            mode = "DRM"
         lang = row[5].strip()
         if lang.startswith("-") or not lang:
             type = "T4"
@@ -266,11 +276,11 @@ with open(FILEIN, "r") as inf:
 
         txsite = ""
         if "/" in row[7]:
-            stn = row[7].split('-')
+            stn = row[7].split("-")
             itu = stn[0][1:]
             try:
                 txsite = stn[1]
-            except:
+            except Exception:
                 pass
         else:
             txsite = row[7]
@@ -279,15 +289,11 @@ with open(FILEIN, "r") as inf:
             notes = f"{itu} {long_name.strip()}. {target} {lang}"
         else:
             notes = f"{itu}. {target} {lang}"
-        
-        # remove "one-day" stations
-        if row[9] == row[10] and row[9] != "":
-            continue
-        
+
         outrow.append(
             [
                 str(khz),
-                f'"QAM"',
+                f'"{mode}"',
                 f'"{ident}"',
                 f'"{notes.strip()}"',
                 "",
@@ -300,6 +306,7 @@ with open(FILEIN, "r") as inf:
                 str(end),
             ]
         )
+
 
 # sort the output list of lists by the frequency
 # which is the first (stringified) element in the lists
