@@ -55,6 +55,7 @@ def last_sunday(year, month):
         return last_day
     return last_day - timedelta(days=last_day.weekday() + 1)
 
+SEASON = ""
 
 today = date.today()
 season_a_start = last_sunday(today.year, 3)
@@ -72,11 +73,13 @@ print(
 
 if season_a_start <= today <= season_a_end:
     FILEIN = f"sked-a{str(today.year)[2:]}.csv"
+    SEASON = "A"
 elif season_a_end < today < season_b_end:
     if today < season_b_end:
         FILEIN = f"sked-b{str(today.year - 1)[2:]}.csv"
     else:
         FILEIN = f"sked-b{str(today.year)[2:]}.csv"
+    SEASON = "B"
 else:
     print("Cannot determine Season and Year. Exiting.")
     sys.exit()
@@ -221,6 +224,9 @@ with open(FILEIN, "r") as inf:
         # remove "one-day" stations
         if row[9] == row[10] and row[9] != "":
             continue
+        # remove stations which do not belong to the running season
+        if (SEASON == "A" and row[8] == "4") or (SEASON == "B" and row[8] == "5"):
+            continue
 
         DOW = ""
         mode = "SAS"  # stereo AM
@@ -232,6 +238,9 @@ with open(FILEIN, "r") as inf:
         if end == "2400":
             end = "2359"
         day = row[2]
+
+        if day.startswith("MF"):
+            day = "Mo-Fr"
         if day.isdigit():
             r = weekdaynumbers_to_binstrings(day, days)
             s = create_weekly_binstring(r)
