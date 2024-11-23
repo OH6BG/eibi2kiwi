@@ -2,7 +2,7 @@
 Create kiwiSDR-compatible broadcast schedules with DX labels
 from EiBi CSV broadcast schedules (http://www.eibispace.de) in Python
 
-Copyright (C) 2023 Jari Perkiömäki OH6BG
+Copyright (C) 2023-2024 Jari Perkiömäki OH6BG
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -68,23 +68,23 @@ if today < season_a_start:
     season_b_end = last_sunday(today.year, 3)
 
 print(
-    f"Season A start: {season_a_start}; Season A end: {season_a_end}; Season B end: {season_b_end}"
+    f"Season A start: {season_a_start}, Season A end: {season_a_end - timedelta(days=1)}\n"
+    f"Season B start: {season_a_end}, Season B end: {season_b_end - timedelta(days=1)}"
 )
 
-if season_a_start <= today <= season_a_end:
+if season_a_start <= today < season_a_end:
     FILEIN = f"sked-a{str(today.year)[2:]}.csv"
     SEASON = "A"
-elif season_a_end < today < season_b_end:
-    if today < season_b_end:
-        FILEIN = f"sked-b{str(today.year - 1)[2:]}.csv"
-    else:
-        FILEIN = f"sked-b{str(today.year)[2:]}.csv"
+elif season_a_end <= today < season_b_end:
+    FILEIN = f"sked-b{str(season_b_end.year - 1)[2:]}.csv"
     SEASON = "B"
 else:
     print("Cannot determine Season and Year. Exiting.")
     sys.exit()
 
-FILEOUT = "kiwi.csv"  # OUTPUT: File to import into kiwiSDR
+# FILEOUT: File to import into kiwiSDR
+# URL: URL to file FILEIN to fetch for processing
+FILEOUT = "kiwi.csv"
 URL = f"http://www.eibispace.de/dx/{FILEIN}"
 
 # download FILEIN file from the EiBi site
@@ -119,7 +119,7 @@ if not Path(FILEIN).is_file():
     sys.exit()
 
 # process FILEIN
-print(f"Processing {FILEIN}... ", end="")
+print(f"Processing {FILEIN}...")
 outrow, DOW = [], ""
 days = {
     "Mo": "1000000",
@@ -223,24 +223,38 @@ with open(FILEIN, "r") as inf:
     for row in reader:
         # remove "one-day" stations
         if row[9] == row[10] and row[9] != "":
+            print(f"skipping one-day: {row}")
             continue
         # remove stations which do not belong to the running season
         if (SEASON == "A" and row[8] == "4") or (SEASON == "B" and row[8] == "5"):
+            print(f"skipping out of season: {row}")
             continue
 
         DOW = ""
-        mode = "SAS"  # stereo AM
+        mode = "SAS"  # default mode - pseudo-stereo AM
         khz = float(row[0])
-        begin, end = row[1].split("-")
-        # avoid using "0000" and "2400" directly
-        if begin == "0000":
-            begin = "0001"
-        if end == "2400":
-            end = "2359"
-        day = row[2]
 
+        begin, end = row[1].split("-")
+        if begin == "0000":
+            begin = ""
+        else:
+            begin = f"'{begin}"
+
+        if end == "2400":
+            end = ""
+        else:
+            end = f"'{end}"
+
+        day = row[2]
         if day.startswith("MF"):
             day = "Mo-Fr"
+        if day.startswith("2Mo-Sa"):
+            day = "Mo-Sa"
+        if day.startswith("2Su"):
+            day = "Su"
+        if day.startswith("2irr") or day.startswith("4irr") or day.startswith("4u") or day.startswith("5o") or day.startswith("2o"):
+            print(f"skipping ambiguous day: {row}")
+            continue
         if day.isdigit():
             r = weekdaynumbers_to_binstrings(day, days)
             s = create_weekly_binstring(r)
@@ -262,11 +276,16 @@ with open(FILEIN, "r") as inf:
             DOW = ""
         else:
             DOW = f'"{DOW}"'
+
         itu = row[3]
-        # if ident (row[4]) contains "DIGITAL", change the mode to "DRM"
+
+        # if ident (row[4]) contains a specific, set it; otherwise "SAS"
         ident = row[4]
         if "DIGITAL" in ident:
             mode = "DRM"
+        if "USB" in ident:
+            mode = "USB"
+
         lang = row[5].strip()
         if lang.startswith("-") or not lang:
             type = "T4"
@@ -298,6 +317,9 @@ with open(FILEIN, "r") as inf:
             notes = f"{itu} {long_name.strip()}. {target} {lang}"
         else:
             notes = f"{itu}. {target} {lang}"
+        
+        if begin == "" and end == "" and DOW == "":
+            notes += "<br>0000-2400 7-days"
 
         outrow.append(
             [
@@ -311,8 +333,8 @@ with open(FILEIN, "r") as inf:
                 "",
                 "",
                 DOW,
-                str(begin),
-                str(end),
+                begin,
+                f"{end};",
             ]
         )
 
@@ -322,8 +344,13 @@ with open(FILEIN, "r") as inf:
 # (converted to float for correct sorting)
 outrow.sort(key=lambda x: float(x[0]))
 
-with open(FILEOUT, "w", encoding="utf-8") as outf:
+# write rows to FILEOUT
+# rows end with 0x0A [.replace(b'\r\n', b'\n')]; write in binary mode "wb"
+header = 'Freq kHz;"Mode";"Ident";"Notes";"Extension";"Type";PB low;PB high;Offset;"DOW";Begin;End;Sig bw\n'.encode('utf-8').replace(b'\r\n', b'\n')
+with open(FILEOUT, "wb") as outf:
+    outf.write(header)
     for row in outrow:
-        outf.write(";".join(row) + "\n")
+        line = (";".join(row) + "\n").encode('utf-8').replace(b'\r\n', b'\n')
+        outf.write(line)
 
-print(f"done, saved as {FILEOUT}.")
+print(f"\nDone, DX label file saved as: {FILEOUT}.")
