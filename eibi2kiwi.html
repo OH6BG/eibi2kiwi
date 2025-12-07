@@ -160,7 +160,7 @@
               const code = parts[1].trim(); // may be empty in file
               const name = parts[2].trim();
 
-              // Skip rows with empty site code or missing data
+              // Skip rows with missing data
               if (!itu || !name) continue;
 
               if (!dict[itu]) dict[itu] = {};
@@ -215,6 +215,10 @@
         function handleLocalFile(file) {
           const reader = new FileReader();
           reader.onload = e => {
+            // Decode EiBi CSV as Windows-1252 (ANSI)
+            const bytes = new Uint8Array(e.target.result);
+            const decodedText = cp1252Decode(bytes);
+
             setStatus(
               `Loaded local file: ${file.name}\nReady for conversion. Choose mode/band and click Download.`,
             );
@@ -223,13 +227,68 @@
             } catch {
               lastSeason = 'A';
             }
-            lastCsvText = e.target.result;
+            lastCsvText = decodedText;
             lastOutputBlob = null;
-            downloadBtn.disabled = false; // user can now trigger conversion+download
+            downloadBtn.disabled = false;
           };
           reader.onerror = e =>
             setStatus('Error reading file: ' + e.target.error);
-          reader.readAsText(file, 'utf-8');
+          reader.readAsArrayBuffer(file);
+        }
+
+        // Strip accents from a string (e.g. ñ -> n, á -> a, é -> e, ó -> o, etc.)
+        function stripAccents(str) {
+          if (!str) return '';
+          // NFKD splits base chars and diacritics, then we drop the diacritics
+          return str.normalize('NFKD').replace(/[\u0300-\u036f]/g, ''); // combining marks
+        }
+
+        // Decode a Uint8Array as Windows-1252 (ANSI)
+        function cp1252Decode(bytes) {
+          const cp1252Table = {
+            0x80: 0x20ac,
+            0x82: 0x201a,
+            0x83: 0x0192,
+            0x84: 0x201e,
+            0x85: 0x2026,
+            0x86: 0x2020,
+            0x87: 0x2021,
+            0x88: 0x02c6,
+            0x89: 0x2030,
+            0x8a: 0x0160,
+            0x8b: 0x2039,
+            0x8c: 0x0152,
+            0x8e: 0x017d,
+            0x91: 0x2018,
+            0x92: 0x2019,
+            0x93: 0x201c,
+            0x94: 0x201d,
+            0x95: 0x2022,
+            0x96: 0x2013,
+            0x97: 0x2014,
+            0x98: 0x02dc,
+            0x99: 0x2122,
+            0x9a: 0x0161,
+            0x9b: 0x203a,
+            0x9c: 0x0153,
+            0x9e: 0x017e,
+            0x9f: 0x0178,
+          };
+
+          let out = '';
+          for (let i = 0; i < bytes.length; i++) {
+            const b = bytes[i];
+            if (b < 0x80 || (b >= 0xa0 && b <= 0xff)) {
+              // ASCII or direct Latin-1 range
+              out += String.fromCharCode(b);
+            } else if (cp1252Table[b]) {
+              out += String.fromCharCode(cp1252Table[b]);
+            } else {
+              // undefined control; map to U+FFFD
+              out += '\uFFFD';
+            }
+          }
+          return out;
         }
 
         // ---------- Conversion logic ----------
@@ -365,7 +424,7 @@
 
             let DOW = '';
             let mode = userMode; // "AM" or "SAS" from dropdown
-            const ident = identRaw || '';
+            const ident = stripAccents(identRaw || ''); // use de-accented ident
 
             if (ident.includes('DIGITAL')) {
               mode = 'DRM';
@@ -425,8 +484,6 @@
             } else {
               DOW = '"' + DOW + '"';
             }
-
-            //const ident = identRaw;
 
             // Type / lang
             let type;
@@ -507,7 +564,9 @@
             csvOut += row.join(';') + '\n';
           }
 
-          const blob = new Blob([csvOut], { type: 'text/csv;charset=utf-8' });
+          const encoder = new TextEncoder(); // UTF‑8 encoder, no BOM
+          const uint8 = encoder.encode(csvOut);
+          const blob = new Blob([uint8], { type: 'text/csv;charset=utf-8' });
           appendStatus(
             `\nDone. Records kept: ${kept} (${
               band === 'HF' ? 'HF only' : 'all bands'
