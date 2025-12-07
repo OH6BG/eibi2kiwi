@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>EiBi-to-kiwiSDR DX labels Converter</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          sans-serif;
+        margin: 0;
+        padding: 1rem 1.5rem 2rem;
+        background: #f5f5f5;
+      }
+      h1 {
+        margin-top: 0;
+        font-size: 1.4rem;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      button {
+        padding: 0.4rem 0.9rem;
+        border-radius: 4px;
+        border: 1px solid #444;
+        background: #fff;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      label {
+        font-size: 0.9rem;
+      }
+      select {
+        padding: 0.2rem 0.4rem;
+        margin-left: 0.3rem;
+      }
+      .status {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        white-space: pre-line;
+      }
+      .dropzone {
+        margin-top: 0.75rem;
+        border: 2px dashed #888;
+        border-radius: 6px;
+        padding: 1rem;
+        text-align: center;
+        background: #fff;
+        color: #444;
+        cursor: pointer;
+      }
+      .dropzone.dragover {
+        border-color: #0078d4;
+        background: #e5f1fb;
+      }
+      .footer-note {
+        margin-top: 1rem;
+        font-size: 0.8rem;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>EiBi-to-kiwiSDR DX Labels Converter</h1>
+
+    <div class="controls">
+      <label>
+        Default AM mode:
+        <select id="modeSelect">
+          <option value="AM">AM</option>
+          <option value="SAS">SAS</option>
+        </select>
+      </label>
+
+      <label>
+        Band:
+        <select id="bandSelect">
+          <option value="ALL">All bands</option>
+          <option value="HF">HF only (≥ 2000 kHz)</option>
+        </select>
+      </label>
+
+      <button id="downloadBtn" disabled>Download kiwi.csv</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div id="dropzone" class="dropzone">
+      Drag &amp; drop an EiBi CSV file here, or click to choose a file…
+      <br />
+      <input
+        id="fileInput"
+        type="file"
+        accept=".csv,text/csv"
+        style="display: none"
+      />
+    </div>
+
+    <div class="footer-note">
+      Uses <b>eibisites.csv</b> for TX site names. &copy; Jari Perkiömäki OH6BG
+      2025.
+    </div>
+
+    <script>
+      (function () {
+        'use strict';
+
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusEl = document.getElementById('status');
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const modeSelect = document.getElementById('modeSelect');
+        const bandSelect = document.getElementById('bandSelect');
+
+        let lastOutputBlob = null;
+        let lastOutputFilename = 'kiwi.csv';
+
+        // store last loaded CSV + season, conversion done on Download click
+        let lastCsvText = null;
+        let lastSeason = 'A';
+
+        // Transmitter site map: { ITU: { siteCode: "Long name" } }
+        let locationDict = {};
+
+        function setStatus(msg) {
+          statusEl.textContent = msg;
+        }
+
+        function appendStatus(msg) {
+          statusEl.textContent += '\n' + msg;
+        }
+
+        // ---------- Load eibisites.csv into locationDict ----------
+        async function loadSites() {
+          try {
+            const resp = await fetch('eibisites.csv');
+            if (!resp.ok) {
+              appendStatus(
+                'Warning: could not load eibisites.csv (HTTP ' +
+                  resp.status +
+                  '). Site names will be limited.',
+              );
+              return;
+            }
+            const text = await resp.text();
+            const lines = text.split(/\r\n|\r|\n/);
+            const dict = {};
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              const parts = line.split(';');
+              if (parts.length < 3) continue;
+
+              const itu = parts[0].trim();
+              const code = parts[1].trim(); // may be empty in file
+              const name = parts[2].trim();
+
+              // Skip rows with empty site code or missing data
+              if (!itu || !name) continue;
+
+              if (!dict[itu]) dict[itu] = {};
+              dict[itu][code] = name;
+            }
+            locationDict = dict;
+            appendStatus(
+              'Loaded eibisites.csv (' +
+                lines.length +
+                ' lines, empty codes skipped).',
+            );
+          } catch (err) {
+            appendStatus('Warning: failed to load eibisites.csv: ' + err);
+          }
+        }
+
+        // ---------- Season / filename (only used to choose A/B for local files) ----------
+        function lastSunday(year, month) {
+          const firstNextMonth = new Date(year, month, 1);
+          const lastDay = new Date(firstNextMonth - 1);
+          const weekday = lastDay.getDay(); // 0=Sun,...,6=Sat
+          if (weekday === 0) return lastDay;
+          const result = new Date(lastDay);
+          result.setDate(result.getDate() - weekday);
+          return result;
+        }
+
+        function computeSeason() {
+          const today = new Date();
+          const y = today.getFullYear();
+
+          const seasonAStart = lastSunday(y, 3); // March
+          const seasonAEnd = lastSunday(y, 10); // October
+          const seasonBEnd = lastSunday(y + 1, 3); // next March
+
+          let aStart = seasonAStart;
+          let aEnd = seasonAEnd;
+          let bEnd = seasonBEnd;
+
+          if (today < aStart) {
+            aStart = lastSunday(y - 1, 3);
+            aEnd = lastSunday(y - 1, 10);
+            bEnd = lastSunday(y, 3);
+          }
+
+          if (today >= aStart && today < aEnd) return 'A';
+          if (today >= aEnd && today < bEnd) return 'B';
+          throw new Error('Cannot determine Season and Year');
+        }
+
+        // ---------- File handling ----------
+        function handleLocalFile(file) {
+          const reader = new FileReader();
+          reader.onload = e => {
+            setStatus(
+              `Loaded local file: ${file.name}\nReady for conversion. Choose mode/band and click Download.`,
+            );
+            try {
+              lastSeason = computeSeason();
+            } catch {
+              lastSeason = 'A';
+            }
+            lastCsvText = e.target.result;
+            lastOutputBlob = null;
+            downloadBtn.disabled = false; // user can now trigger conversion+download
+          };
+          reader.onerror = e =>
+            setStatus('Error reading file: ' + e.target.error);
+          reader.readAsText(file, 'utf-8');
+        }
+
+        // ---------- Conversion logic ----------
+        const DAYS_MAP = {
+          Mo: '1000000',
+          Tu: '0100000',
+          We: '0010000',
+          Th: '0001000',
+          Fr: '0000100',
+          Sa: '0000010',
+          Su: '0000001',
+        };
+
+        function expandWeekdayRange(weekdayRange) {
+          const weekdays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+          const [start, end] = weekdayRange.split('-');
+
+          const startIndex = weekdays.indexOf(start);
+          const endIndex = weekdays.indexOf(end);
+          let result;
+          if (startIndex <= endIndex) {
+            result = weekdays.slice(startIndex, endIndex + 1);
+          } else {
+            result = weekdays
+              .slice(startIndex)
+              .concat(weekdays.slice(0, endIndex + 1));
+          }
+          return result.join(',');
+        }
+
+        function weekdaysToBinStrings(weekdays, daysDict) {
+          const result = [];
+          for (const day of weekdays.split(',')) {
+            result.push(daysDict[day]);
+          }
+          return result;
+        }
+
+        function weekdayNumbersToBinStrings(numbersString, daysDict) {
+          const daylist = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+          const weekdaysList = [];
+          for (const ch of numbersString) {
+            const idx = parseInt(ch, 10) - 1;
+            if (idx >= 0 && idx < daylist.length) {
+              weekdaysList.push(daylist[idx]);
+            }
+          }
+          return weekdaysToBinStrings(weekdaysList.join(','), daysDict);
+        }
+
+        function createWeeklyBinstring(binStrings) {
+          let result = '';
+          const length = binStrings[0].length;
+          for (let i = 0; i < length; i++) {
+            let anyOne = false;
+            for (const s of binStrings) {
+              if (s[i] === '1') {
+                anyOne = true;
+                break;
+              }
+            }
+            result += anyOne ? '1' : '0';
+          }
+          return result;
+        }
+
+        function binstringToDOWString(binString) {
+          const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+          let res = '';
+          for (let i = 0; i < binString.length; i++) {
+            res += binString[i] === '1' ? days[i] : '_';
+          }
+          return res;
+        }
+
+        function parseCsv(text) {
+          const lines = text.split(/\r\n|\r|\n/);
+          const rows = [];
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const parts = line.split(';');
+            rows.push(parts);
+          }
+          return rows;
+        }
+
+        function processEiBiCsv(text, season, userMode, band) {
+          const rows = parseCsv(text);
+          if (rows.length <= 1) {
+            setStatus('CSV appears empty or only header.');
+            return null;
+          }
+          const dataRows = rows.slice(1);
+          const out = [];
+
+          const HF_MIN = 2000.0; // kHz threshold
+          let kept = 0;
+
+          for (const row of dataRows) {
+            if (row.length < 11) continue;
+
+            const khzStr = row[0] || '';
+            const timeRange = row[1] || '';
+            let day = row[2] || '';
+            let itu = row[3] || '';
+            const identRaw = row[4] || '';
+            let lang = (row[5] || '').trim();
+            let target = (row[6] || '').trim();
+            let txField = row[7] || '';
+            const seasonCode = row[8] || '';
+            const dayStart = row[9] || '';
+            const dayEnd = row[10] || '';
+
+            const khz = parseFloat(khzStr);
+            if (Number.isNaN(khz)) continue;
+
+            // HF-only filter
+            if (band === 'HF' && khz < HF_MIN) {
+              continue;
+            }
+
+            // remove "one-day" stations
+            if (dayStart === dayEnd && dayStart !== '') {
+              continue;
+            }
+            // remove out-of-season
+            if (
+              (season === 'A' && seasonCode === '4') ||
+              (season === 'B' && seasonCode === '5')
+            ) {
+              continue;
+            }
+
+            let DOW = '';
+            let mode = userMode; // "AM" or "SAS" from dropdown
+            const ident = identRaw || '';
+
+            if (ident.includes('DIGITAL')) {
+              mode = 'DRM';
+            }
+            if (ident.includes('USB')) {
+              mode = 'USB';
+            }
+
+            const [beginRaw, endRaw] = timeRange.split('-');
+
+            let begin =
+              beginRaw === '0000' ? '' : beginRaw ? "'" + beginRaw : '';
+            let end = endRaw === '2400' ? '' : endRaw ? "'" + endRaw : '';
+
+            // Day handling
+            if (day.startsWith('MF')) day = 'Mo-Fr';
+            if (day.startsWith('2Mo-Sa')) day = 'Mo-Sa';
+            if (day.startsWith('2Su')) day = 'Su';
+            if (
+              day.startsWith('2irr') ||
+              day.startsWith('4irr') ||
+              day.startsWith('4u') ||
+              day.startsWith('5o') ||
+              day.startsWith('2o')
+            ) {
+              continue;
+            }
+
+            if (/^\d+$/.test(day)) {
+              const r = weekdayNumbersToBinStrings(day, DAYS_MAP);
+              const s = createWeeklyBinstring(r);
+              DOW = binstringToDOWString(s);
+            } else if (
+              day.includes(',') ||
+              Object.prototype.hasOwnProperty.call(DAYS_MAP, day) ||
+              day === 'SaSu' ||
+              day.startsWith('1.')
+            ) {
+              if (day === 'SaSu') {
+                day = 'Sa,Su';
+              }
+              if (day.startsWith('1.')) {
+                day = day.slice(2);
+              }
+              const r = weekdaysToBinStrings(day, DAYS_MAP);
+              const s = createWeeklyBinstring(r);
+              DOW = binstringToDOWString(s);
+            } else if (day.includes('-') && !day.endsWith('-')) {
+              let r = expandWeekdayRange(day);
+              r = weekdaysToBinStrings(r, DAYS_MAP);
+              const s = createWeeklyBinstring(r);
+              DOW = binstringToDOWString(s);
+            }
+
+            if (!DOW) {
+              DOW = '';
+            } else {
+              DOW = '"' + DOW + '"';
+            }
+
+            //const ident = identRaw;
+
+            // Type / lang
+            let type;
+            if (lang.startsWith('-') || !lang) {
+              type = 'T4';
+            } else {
+              type = 'T3';
+            }
+
+            if (!lang) {
+              lang = '';
+            } else {
+              lang = 'Lang: ' + lang;
+            }
+
+            if (!target) {
+              target = '';
+            } else {
+              target = 'Target: ' + target + '.';
+            }
+
+            let txsiteCode = '';
+            if (txField.includes('/')) {
+              const stn = txField.split('-');
+              if (stn.length > 0) {
+                itu = stn[0].slice(1) || itu;
+              }
+              if (stn.length > 1) {
+                txsiteCode = stn[1];
+              }
+            } else {
+              txsiteCode = txField;
+            }
+
+            let notes;
+            const longName =
+              locationDict[itu] &&
+              Object.prototype.hasOwnProperty.call(
+                locationDict[itu],
+                txsiteCode,
+              )
+                ? locationDict[itu][txsiteCode]
+                : null;
+
+            if (longName != null) {
+              notes = `${itu} ${longName.trim()}. ${target} ${lang}`;
+            } else {
+              notes = `${itu}. ${target} ${lang}`;
+            }
+
+            if (!begin && !end && !DOW) {
+              notes += '<br>0000-2400 7-days';
+            }
+
+            out.push([
+              String(khz),
+              `"${mode}"`,
+              `"${ident}"`,
+              `"${notes.trim()}"`,
+              '',
+              `"${type}"`,
+              '',
+              '',
+              '',
+              DOW,
+              begin,
+              `${end};`,
+            ]);
+            kept += 1;
+          }
+
+          out.sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
+
+          const header =
+            'Freq kHz;"Mode";"Ident";"Notes";"Extension";"Type";PB low;PB high;Offset;"DOW";Begin;End;Sig bw\n';
+          let csvOut = header;
+          for (const row of out) {
+            csvOut += row.join(';') + '\n';
+          }
+
+          const blob = new Blob([csvOut], { type: 'text/csv;charset=utf-8' });
+          appendStatus(
+            `\nDone. Records kept: ${kept} (${
+              band === 'HF' ? 'HF only' : 'all bands'
+            }).`,
+          );
+          return blob;
+        }
+
+        // ---------- Download ----------
+        function downloadResult() {
+          if (!lastCsvText) {
+            setStatus('No EiBi CSV loaded yet.');
+            return;
+          }
+
+          // read user-selected settings *now*
+          const userMode = modeSelect.value;
+          const band = bandSelect.value;
+
+          setStatus(`Converting with Mode=${userMode}, Band=${band} …`);
+          const blob = processEiBiCsv(lastCsvText, lastSeason, userMode, band);
+          if (!blob) return;
+
+          lastOutputBlob = blob;
+          const url = URL.createObjectURL(lastOutputBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = lastOutputFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        // ---------- Event wiring ----------
+        downloadBtn.addEventListener('click', downloadResult);
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', e => {
+          e.preventDefault();
+          dropzone.classList.remove('dragover');
+        });
+        dropzone.addEventListener('drop', e => {
+          e.preventDefault();
+          dropzone.classList.remove('dragover');
+          const file = e.dataTransfer.files[0];
+          if (file) {
+            downloadBtn.disabled = true;
+            lastOutputBlob = null;
+            lastCsvText = null;
+            handleLocalFile(file);
+          }
+        });
+
+        fileInput.addEventListener('change', () => {
+          const file = fileInput.files[0];
+          if (file) {
+            downloadBtn.disabled = true;
+            lastOutputBlob = null;
+            lastCsvText = null;
+            handleLocalFile(file);
+            fileInput.value = '';
+          }
+        });
+
+        // Load eibisites.csv on startup (best-effort)
+        loadSites();
+      })();
+    </script>
+  </body>
+</html>
