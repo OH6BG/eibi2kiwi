@@ -67,6 +67,7 @@ AUS;ch;VKS737 Charter Towers QLD
 AUS;cl;RFDS Charleville QLD
 AUS;ct;VKS737 Charter Towers QLD
 AUS;cv;RFDS Carnarvon WA
+AUS;du;Dural/Sydney NSW
 AUS;ee;VKS737 Adelaide/Elizabeth East SA
 AUS;ex;Exmouth WA
 AUS;g;Gunnedah NSW
@@ -79,7 +80,7 @@ AUS;ka;Katherine NT
 AUS;kd;RFDS Kuranda QLD
 AUS;ku;Kununurra WA
 AUS;kw;Kununurra WA
-AUS;L;Sydney NSW
+AUS;L;Sydney-Leppington NSW
 AUS;m;Macleay Island QL
 AUS;ma;Manilla NSW
 AUS;md;Mareeba QL
@@ -94,7 +95,7 @@ AUS;ri;Russell Island QL
 AUS;rm;Roma QL
 AUS;rz;Razorback NSW
 AUS;s;Shepparton VIC
-AUS;sa;Shepparton VIC
+AUS;sa;Shepparton-Ardmona VIC
 AUS;sb;VKS737 Stawell VIC
 AUS;sf;Schofields, Western Sydney
 AUS;sm;St Mary's, Sydney NSW
@@ -164,6 +165,7 @@ B;mg;Manaus Radio Globo, AM
 B;mi;Marília, SP
 B;mm;São Mateus do Maranhão
 B;mo;Mogi das Cruces, SP
+B;mp;Mirandópolis, SP
 B;mr;Manaus Radio Rio Mar, AM
 B;ob;Óbidos, PA
 B;os;Osasco, SP
@@ -202,6 +204,7 @@ B;xn;Unknown Paraná
 B;xp;Unknown Paraíba
 B;xx;Unknown
 BEL;o;Oostende
+BEL;r;Ruiselede
 BEL;w;Wingene
 BEN;c;Cotonou
 BEN;p;Parakou
@@ -294,6 +297,7 @@ CHL;gc;General Carrera
 CHL;jf;Juan Fernández
 CHL;pa;Punta Arenas
 CHL;pm;Puerto Montt
+CHL;q;Isla de Pascua
 CHL;s;Santiago
 CHL;t;Talagante
 CHL;tq;Talahuano
@@ -313,6 +317,7 @@ CHN;ch;Changzhou Henglinchen
 CHN;d;Dongfang
 CHN;da;Dalian
 CHN;db;Dongfang
+CHN;de;Dehong
 CHN;e;Gejiu
 CHN;eb;Beijing/Posolstvo
 CHN;f;Fuzhou
@@ -369,6 +374,7 @@ CHN;ya;Yanbian
 CHN;yt;Yantai
 CHN;zh;Zhuhai
 CHN;zj;Zhanjiang
+CHN;zn;Zhongshan
 CHN;zs;Mount Putuo
 CKH;rt;Rarotonga
 CLM;b;Barranquilla
@@ -388,6 +394,7 @@ CNR;hr;Haría/Tenerife
 CNR;hy;Los Hoyos/Gran Canaria
 CNR;lm;Las Mesas/Las Palmas
 CNR;pr;Puerto del Rosario
+CNR;xx;Unknown
 COD;bk;Bukavu
 COD;bu;Bunia
 COG;b;Brazzaville
@@ -461,10 +468,10 @@ D;wa;Winsen
 D;wb;Wachenbrunn
 D;we;Weenermoor
 D;wh;Waldheim
-D;xx;Secret
+D;xx;Unknown
 DJI;d;Djibouti
 DJI;i;Centre de Transmissions Interarmées FUV
-DNK;a;Aarhus
+DNK;a;Aarhus/Mårslet
 DNK;bl;Blaavand
 DNK;br;Bramming
 DNK;bv;Bovbjerg
@@ -505,6 +512,7 @@ E;ta;Tarifa
 E;tj;Trijueque
 E;to;Torrejón de Ardoz
 E;vj;Vejer
+E;xx;Unknown
 EGY;a;Abis
 EGY;al;Alexandria
 EGY;ca;Cairo
@@ -540,7 +548,7 @@ F;cm;Col de la Madone
 F;co;Corsen
 F;g;La Garde
 F;gn;Gris
-F;hy;Hyères Island
+F;hy;Hyères Isl
 F;i;Issoudun
 F;jb;Jobourg
 F;ma;Mont Angel/Fontbonne
@@ -621,7 +629,7 @@ GRC;k;Kerkyra
 GRC;L;Limnos
 GRC;o;Olimpia
 GRC;r;Rhodos
-GRC;xx;Secret
+GRC;xx;Unknown
 GRL;aa;Aasiaat
 GRL;ik;Ikerasassuaq
 GRL;ko;Kook Island
@@ -664,7 +672,7 @@ HOL;n;Nijmegen
 HOL;o;Ouddorp
 HOL;ov;Overslag
 HOL;w;Winterswijk
-HOL;xx;Secret
+HOL;xx;Unknown
 HOL;zw;Zwolle
 HRV;;Deanovec
 HWA;a;WWVH
@@ -684,28 +692,33 @@ I;au;Augusta IQA
 I;b;San Benedetto de Tronto IQP
 I;ba;Bari IPB
 I;cg;Cagliari IDC
+I;cm;Cagliari IDR
 I;cv;Civitavecchia IPD
 I;eu;Radio Europa NW
 I;ge;Genova ICB
 I;kr;Crotone IPC
 I;li;Livorno
 I;lm;Lampedusa
+I;ls;La Spazia IDR
 I;me;Messina IDF
 I;mp;Monteparano IPC
 I;mz;Mazara del Vallo IQQ
 I;na;Napoli
 I;p;Padova
 I;pa;Palermo
+I;pi;San Pietro Isl IDR
 I;pt;Porto Torres IZN
 I;r;Roma
 I;ra;Roma IMB
 I;re;Rome
+I;sa;Sant'Anna d'Alfaedo IDR
 I;si;Sigonella
+I;sp;Santa Panagia/Siracusa IDR
 I;sr;Santa Rosa, Roma
 I;sy;NSY
 I;t;Trieste IQX
 I;v;Viareggio, Toscana
-I;xx;Secret
+I;xx;Unknown
 IND;a;Aligarh
 IND;ah;Ahmedabad
 IND;az;Aizawl
@@ -769,7 +782,7 @@ INS;bt;Benete
 INS;bu;Bukittinggi
 INS;bw;Belawan
 INS;by;Biak
-INS;b2;Bau
+INS;b2;Bau-Bau
 INS;b3;Bengkulu
 INS;b4;Bima
 INS;b5;Bintuni
@@ -800,6 +813,7 @@ INS;js;Jakarta
 INS;jw;Juwana
 INS;jx;Jakarta PKX
 INS;jy;Jayapura
+INS;k;Kebayoran Baru
 INS;ka;Kaimana
 INS;kb;Kalabahi
 INS;kd;Kendari
@@ -860,7 +874,7 @@ INS;ro;Reo
 INS;sa;Sabang
 INS;sb;Seba
 INS;se;Serui
-INS;sg;Semarang,
+INS;sg;Semarang
 INS;sh;Susoh
 INS;si;Sarmi
 INS;sj;Selat Panjang
@@ -890,7 +904,7 @@ INS;tl;Tembilahan
 INS;tm;Tarempa
 INS;to;Tobelo
 INS;ts;Tanjung Santan
-INS;tt;Toli
+INS;tt;Toli-Toli
 INS;tu;Tanjung Uban
 INS;tw;Tual
 INS;ty;Taluk Bayur
@@ -902,12 +916,14 @@ IRL;s;Shannon
 IRL;sk;Sheskin
 IRL;tr;Tralee
 IRL;v;Valentia
-IRL;xx;Secret
+IRL;xx;Unknown
+IRL;xy;Varying
 IRN;a;Ahwaz
 IRN;b;Bandar'e Torkeman
 IRN;ba;Bandar Abbas
 IRN;bb;Bonab
 IRN;c;Chah Bahar
+IRN;g;Gorgan
 IRN;j;Jolfa
 IRN;k;Kamalabad
 IRN;ke;Kish Isl
@@ -994,6 +1010,7 @@ J;xx;Unknown
 J;y;Yamata
 J;yo;Yokota AFB
 J;yz;Yozadake (Okinawa)
+J;zz;Trading
 JOR;ak;Al Karanah
 JOR;am;Amman
 KAZ;a;Almaty
@@ -1040,6 +1057,7 @@ KWT;kw;Kuwait
 LAO;s;Sam Neua
 LAO;v;Vientiane
 LBN;be;Beirut
+LBR;;Monrovia
 LBR;e;Monrovia
 LBR;m;Monrovia Mamba Point
 LBR;s;Monrovia
@@ -1097,7 +1115,7 @@ MRT;u;FUF Martinique
 MTN;;Nouakchott
 MYA;n;Naypyidaw
 MYA;p;Phin Oo Lwin, Mandalay
-MYA;t;Taunggyi(Kalaw)
+MYA;t;Taunggyi
 MYA;y;Yegu
 NCL;n;Nouméa Ouen
 NFK;;Norfolk Isl
@@ -1144,6 +1162,7 @@ NZL;du;Dunedin
 NZL;r;Rangitaiki
 NZL;ru;Russell
 NZL;t;Taupo
+NZL;xx;Unknown
 OCE;fa;Faa'a airport
 OCE;ma;Mahina/Tahiti
 OMA;a;A'Seela
@@ -1261,7 +1280,7 @@ RUS;ba;Barnaul, Altay
 RUS;bg;Belaya Gora, Sakha
 RUS;bo;Bolotnoye, Novosibirsk oblast
 RUS;B1;Kerro/St Petersburg
-RUS;B2;Naro
+RUS;B2;Iskra
 RUS;c;Chita
 RUS;cb;Cheboksary
 RUS;cs;Cherskiy
@@ -1347,6 +1366,7 @@ RUS;ol;Oleniy
 RUS;om;Omsk
 RUS;or;Orenburg
 RUS;ox;Okhotsk Bulgin
+RUS;o2;Orenburg-2
 RUS;p;Petropavlovsk Kamchatskiy
 RUS;pc;Pechora
 RUS;pe;Perm
@@ -1373,6 +1393,7 @@ RUS;ry;Rybachi
 RUS;s;Samara
 RUS;sa;Samara Centre
 RUS;sb;Sabetta
+RUS;sc;Seshcha
 RUS;sd;Severodvinsk
 RUS;se;Sevastopol
 RUS;sh;Salekhard
@@ -1395,9 +1416,11 @@ RUS;s5;Sterlegova Cape
 RUS;s6;Stolbovoy Island
 RUS;s7;Svobodny
 RUS;t;Taldom Severnyj
+RUS;tc;Taganrog
 RUS;tg;Taganrog
 RUS;ti;Tiksi
 RUS;tm;Tomsk
+RUS;to;Tver-Migalovo
 RUS;tr;Temryuk
 RUS;ts;Tarko Sale
 RUS;tu;Tulagino
@@ -1478,6 +1501,7 @@ THA;bv;Bangkok Volmet
 THA;hy;Hat Yai
 THA;n;Nakhon Sawan
 THA;u;Udon Thani
+TJK;;Orzu
 TJK;da;Dushanbe airport
 TJK;y;Yangi Yul/Dushanbe
 TJK;o;Orzu
@@ -1554,6 +1578,7 @@ USA;bo;Boston, MA
 USA;bt;Bethel, PA
 USA;c;Cypress Creek, SC
 USA;ch;Chesapeake Pungo Airfield, VA
+USA;ci;WLW Cincinnati, OH
 USA;cu;Cutler, ME
 USA;da;Davidsonville, MD
 USA;ds;Destin, FL
@@ -1572,6 +1597,8 @@ USA;g;Greenville, NC
 USA;hw;Altus, OK
 USA;jc;Jim Creek, WA
 USA;k;Key Saddlebunch, FL
+USA;kc;KSCS Fort Worth, TX
+USA;ks;KSL Salt Lake City, UT
 USA;L;Lebanon, TN
 USA;LL;Lakeland, FL
 USA;lm;Lamoure, ND
@@ -1587,19 +1614,24 @@ USA;o;Okeechobee, FL
 USA;ob;San Luis Obispo, CA
 USA;of;Offutt AFB, NE
 USA;q;Monticello, ME
+USA;pa;Palo Alto, CA
 USA;pg;Punta Gorda, FL
 USA;pr;Point Reyes, CA
 USA;rh;Riverhead, NY
 USA;rl;Red Lion, PA
 USA;rs;Rancho Simi, CA
+USA;rv;Rio Vista, CA
 USA;sc;Sacramento, CA
 USA;se;Seattle, WA
 USA;sf;San Francisco Radio
+USA;sk;Seattle, WA
+USA;sm;U of Southern Mississippi
 USA;uc;UC Davis
 USA;ud;UC Davis
 USA;v;Vado, NM
 USA;vs;Vashon Isl, WA
 USA;wa;Washington, DC
+USA;wb;Fort Worth, TX
 USA;wc;Beale AFB Marysville, CA
 USA;wg;Fort Lauderdale, FL
 USA;ws;West Sacramento, CA
